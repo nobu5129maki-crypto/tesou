@@ -4,7 +4,7 @@
 
 import io
 import base64
-from PIL import Image, ImageFilter, ImageEnhance
+from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageStat
 
 
 def load_image(img_bytes):
@@ -23,7 +23,29 @@ def resize_if_needed(img, max_size=800):
     return img.resize((new_w, new_h), Image.Resampling.LANCZOS)
 
 
+def preprocess_for_lighting(img):
+    """照明条件に合わせて画像を補正（暗い・コントラスト不足に対応）"""
+    img = img.convert('RGB')
+    gray = img.convert('L')
+    stat = ImageStat.Stat(gray)
+    mean_brightness = stat.mean[0]
+    # 暗い画像は明るさを上げる
+    if mean_brightness < 80:
+        factor = 100 / max(mean_brightness, 20)
+        img = ImageEnhance.Brightness(img).enhance(min(factor, 2.5))
+    elif mean_brightness > 180:
+        factor = 140 / mean_brightness
+        img = ImageEnhance.Brightness(img).enhance(max(factor, 0.6))
+    # コントラストを自動補正
+    r, g, b = img.split()
+    r = ImageOps.autocontrast(r, cutoff=2)
+    g = ImageOps.autocontrast(g, cutoff=2)
+    b = ImageOps.autocontrast(b, cutoff=2)
+    return Image.merge('RGB', (r, g, b))
+
+
 def detect_palm_lines(img):
+    img = preprocess_for_lighting(img)
     gray = img.convert('L')
     enhanced = ImageEnhance.Contrast(gray).enhance(2.5)
     enhanced = ImageEnhance.Sharpness(enhanced).enhance(2.5)
