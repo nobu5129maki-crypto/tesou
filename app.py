@@ -13,6 +13,7 @@ from image_processing import (
     detect_palm_lines,
     analyze_line_characteristics,
     create_visualization,
+    edges_to_visible_display,
     encode_image_to_base64,
 )
 from palm_interpretation import get_palm_reading_interpretation
@@ -79,7 +80,8 @@ def analyze():
         # ビジュアル画像生成
         visualization = create_visualization(img, edges)
         viz_base64 = encode_image_to_base64(visualization)
-        edges_base64 = encode_image_to_base64(edges)
+        edges_display = edges_to_visible_display(edges)
+        edges_base64 = encode_image_to_base64(edges_display)
         
         # カテゴリ一覧（見たい分野を選べるように）
         categories = [
