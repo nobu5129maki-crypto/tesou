@@ -14,7 +14,7 @@ def load_image(img_bytes):
         return None
 
 
-def resize_if_needed(img, max_size=800):
+def resize_if_needed(img, max_size=1000):
     w, h = img.size
     if max(h, w) <= max_size:
         return img
@@ -103,15 +103,14 @@ def detect_palm_lines(img):
     for blur_radius in [1, 2, 3]:
         blurred = enhanced.filter(ImageFilter.GaussianBlur(radius=blur_radius))
         edges = blurred.filter(ImageFilter.FIND_EDGES)
-        edges = ImageEnhance.Contrast(edges).enhance(8.0)
-        # 閾値を下げて薄い線も検出（5以下はノイズになりやすいので5に）
-        edges_binary = edges.point(lambda x: 255 if x > 5 else 0, mode='L')
-        # 線を太くして視認性向上（7x7で2回）
-        edges_binary = edges_binary.filter(ImageFilter.MaxFilter(7))
-        edges_binary = edges_binary.filter(ImageFilter.MaxFilter(7))
+        edges = ImageEnhance.Contrast(edges).enhance(6.0)
+        # 閾値でノイズを抑えつつ線を検出（低すぎると塊になる）
+        edges_binary = edges.point(lambda x: 255 if x > 12 else 0, mode='L')
+        # 線を適度に太く（強くしすぎると塊になって見えなくなる）
+        edges_binary = edges_binary.filter(ImageFilter.MaxFilter(5))
         line_count = sum(1 for p in edges_binary.getdata() if p > 0)
         results.append((edges_binary, line_count))
-    results.sort(key=lambda x: abs(x[1] - 8000))
+    results.sort(key=lambda x: abs(x[1] - 6000))
     return results[0][0], enhanced
 
 
@@ -155,7 +154,7 @@ def create_visualization(img, edges):
     overlay = Image.composite(
         Image.new('RGB', img.size, line_color), black, mask
     )
-    return Image.blend(img, overlay, 0.92)
+    return Image.blend(img, overlay, 0.78)
 
 
 def edges_to_visible_display(edges):
