@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#c9a227">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="手相解析">
+    <title>手相解析 - 鮮明で正確な手相分析</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">✋</span>
+                <h1>手相解析</h1>
+                <p class="subtitle">鮮明で正確な手相分析</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="upload-section" id="uploadSection">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg,image/webp" hidden>
+                    <div class="upload-content">
+                        <div class="upload-icon">📷</div>
+                        <p class="upload-text">手のひらの画像をドラッグ＆ドロップ</p>
+                        <p class="upload-subtext">またはクリックしてファイルを選択</p>
+                        <p class="upload-hint">PNG, JPG, WEBP形式（最大16MB）</p>
+                    </div>
+                </div>
+                <div class="camera-section">
+                    <button type="button" class="camera-btn" id="cameraBtn">
+                        <span class="btn-icon">📸</span>
+                        カメラで撮影
+                    </button>
+                    <div class="camera-modal" id="cameraModal" aria-hidden="true">
+                        <div class="camera-modal-content">
+                            <video id="cameraVideo" autoplay playsinline></video>
+                            <canvas id="cameraCanvas" hidden></canvas>
+                            <div class="camera-controls">
+                                <button type="button" class="btn btn-secondary" id="closeCameraBtn">キャンセル</button>
+                                <button type="button" class="btn btn-primary" id="captureBtn">
+                                    <span>撮影</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="preview-section hidden" id="previewSection" aria-hidden="true">
+                <div class="preview-container">
+                    <div class="preview-image-wrapper">
+                        <img id="previewImage" src="" alt="手のひらプレビュー">
+                        <button type="button" class="change-image-btn" id="changeImageBtn">別の画像を選択</button>
+                    </div>
+                    <button type="button" class="analyze-btn" id="analyzeBtn">
+                        <span class="btn-text">手相を解析する</span>
+                        <span class="btn-loading hidden" id="loadingSpinner">解析中...</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="results-section hidden" id="resultsSection" aria-hidden="true">
+                <h2 class="results-title">解析結果</h2>
+                
+                <div class="image-comparison">
+                    <div class="comparison-item">
+                        <h3>検出された手相の線</h3>
+                        <img id="edgesImage" src="" alt="線検出結果">
+                    </div>
+                    <div class="comparison-item">
+                        <h3>オーバーレイ表示</h3>
+                        <img id="vizImage" src="" alt="解析ビジュアル">
+                    </div>
+                </div>
+
+                <div class="interpretations">
+                    <h3 class="interpretations-title">各線の解釈</h3>
+                    <p class="interpretations-hint">※「線の明瞭度」は画像から検出された手相の線の濃さを示します。高いほどはっきりと見えていることを表します。</p>
+                    <div class="category-filters" id="categoryFilters">
+                        <button type="button" class="category-btn active" data-category="all">すべて</button>
+                    </div>
+                    <div id="interpretationsList" class="interpretations-list"></div>
+                </div>
+
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" id="newAnalysisBtn">新しい解析を行う</button>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>※ この解析は伝統的手相学に基づく参考情報です。楽しみながらご利用ください。</p>
+        </footer>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
