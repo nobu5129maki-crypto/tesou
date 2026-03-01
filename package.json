@@ -1,0 +1,8 @@
+{
+  "name": "tesou",
+  "version": "1.0.0",
+  "description": "手相解析アプリ",
+  "scripts": {
+    "build": "node build.js"
+  }
+}
