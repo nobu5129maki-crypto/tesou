@@ -307,6 +307,52 @@ body {
     color: var(--color-accent-soft);
 }
 
+.lighting-status {
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.lighting-status.good,
+.lighting-status.ok {
+    background: rgba(34, 139, 34, 0.15);
+    border: 1px solid rgba(34, 139, 34, 0.4);
+    color: #2e8b2e;
+}
+
+.lighting-status.dark,
+.lighting-status.bright {
+    background: rgba(218, 165, 32, 0.15);
+    border: 1px solid rgba(218, 165, 32, 0.5);
+    color: #b8860b;
+}
+
+.lighting-status.too_dark,
+.lighting-status.too_bright {
+    background: rgba(178, 34, 34, 0.15);
+    border: 1px solid rgba(178, 34, 34, 0.4);
+    color: #b22222;
+}
+
+.lighting-status-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.lighting-status-text {
+    flex: 1;
+}
+
+.lighting-status-brightness {
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
 .image-comparison {
     display: grid;
     grid-template-columns: 1fr 1fr;

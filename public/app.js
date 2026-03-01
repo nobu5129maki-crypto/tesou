@@ -143,9 +143,45 @@ function filterInterpretations(category) {
     });
 }
 
+const LIGHTING_ICONS = {
+    good: '✓',
+    ok: '✓',
+    dark: '⚠',
+    bright: '⚠',
+    too_dark: '✕',
+    too_bright: '✕',
+};
+
+const LIGHTING_LABELS = {
+    good: '照明：適切',
+    ok: '照明：問題なし',
+    dark: '照明：やや暗め',
+    bright: '照明：やや明るめ',
+    too_dark: '照明：不足',
+    too_bright: '照明：明るすぎ',
+};
+
 function showResults(data) {
     edgesImage.src = data.edges_image;
     vizImage.src = data.visualization;
+    
+    const lightingEl = document.getElementById('lightingStatus');
+    if (lightingEl && data.lighting) {
+        const L = data.lighting;
+        const status = L.status || 'ok';
+        lightingEl.className = `lighting-status ${status}`;
+        lightingEl.innerHTML = `
+            <span class="lighting-status-icon" aria-hidden="true">${LIGHTING_ICONS[status] || '○'}</span>
+            <div class="lighting-status-text">
+                <strong>${LIGHTING_LABELS[status] || '照明'}</strong>
+                <p style="margin:0.25rem 0 0">${L.message || ''}</p>
+                <span class="lighting-status-brightness">明るさレベル: ${L.brightness ?? '—'} / 255</span>
+            </div>
+        `;
+    } else if (lightingEl) {
+        lightingEl.className = 'lighting-status ok';
+        lightingEl.innerHTML = '';
+    }
     
     currentInterpretations = data.interpretations || [];
     currentCategories = data.categories || [];
