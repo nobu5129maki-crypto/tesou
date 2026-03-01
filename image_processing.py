@@ -25,14 +25,15 @@ def resize_if_needed(img, max_size=800):
 
 def detect_palm_lines(img):
     gray = img.convert('L')
-    enhanced = ImageEnhance.Contrast(gray).enhance(1.8)
-    enhanced = ImageEnhance.Sharpness(enhanced).enhance(1.5)
+    enhanced = ImageEnhance.Contrast(gray).enhance(2.0)
+    enhanced = ImageEnhance.Sharpness(enhanced).enhance(2.0)
     results = []
     for blur_radius in [1, 2]:
         blurred = enhanced.filter(ImageFilter.GaussianBlur(radius=blur_radius))
         edges = blurred.filter(ImageFilter.FIND_EDGES)
-        edges = ImageEnhance.Contrast(edges).enhance(2.0)
-        edges_binary = edges.point(lambda x: 255 if x > 80 else 0, mode='L')
+        edges = ImageEnhance.Contrast(edges).enhance(3.0)
+        edges_binary = edges.point(lambda x: 255 if x > 40 else 0, mode='L')
+        edges_binary = edges_binary.filter(ImageFilter.MaxFilter(3))
         line_count = sum(1 for p in edges_binary.getdata() if p > 0)
         results.append((edges_binary, line_count))
     results.sort(key=lambda x: abs(x[1] - 5000))
@@ -72,11 +73,11 @@ def analyze_line_characteristics(edges_img):
 def create_visualization(img, edges):
     if img.mode != 'RGB':
         img = img.convert('RGB')
-    green = Image.new('RGB', img.size, (0, 200, 100))
+    green = Image.new('RGB', img.size, (0, 255, 120))
     black = Image.new('RGB', img.size, (0, 0, 0))
     mask = edges.point(lambda x: 255 if x > 0 else 0, mode='1')
     overlay = Image.composite(green, black, mask)
-    return Image.blend(img, overlay, 0.3)
+    return Image.blend(img, overlay, 0.5)
 
 
 def encode_image_to_base64(img):
