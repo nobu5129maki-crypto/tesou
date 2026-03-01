@@ -147,14 +147,12 @@ def analyze_line_characteristics(edges_img):
 def create_visualization(img, edges):
     if img.mode != 'RGB':
         img = img.convert('RGB')
-    # 明るいシアンで線をはっきり表示（肌色との対比が強い）
+    # 元写真の上に検出線を重ねる（元写真はそのまま見えるように）
     line_color = (0, 255, 220)
-    black = Image.new('RGB', img.size, (0, 0, 0))
+    line_layer = Image.new('RGB', img.size, line_color)
     mask = edges.point(lambda x: 255 if x > 0 else 0, mode='1')
-    overlay = Image.composite(
-        Image.new('RGB', img.size, line_color), black, mask
-    )
-    return Image.blend(img, overlay, 0.78)
+    # 線の部分だけシアンを重ね、それ以外は元画像を表示
+    return Image.composite(line_layer, img, mask)
 
 
 def edges_to_visible_display(edges):
