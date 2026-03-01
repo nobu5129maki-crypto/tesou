@@ -2,22 +2,12 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [
-    { "source": "/", "destination": "/index.html" }
-  ],
+  "rewrites": [{"source": "/", "destination": "/index.html"}],
   "functions": {
     "api/analyze.py": {
-      "runtime": "@vercel/python",
       "memory": 1024,
       "maxDuration": 30
     }
   },
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
-      ]
-    }
-  ]
+  "headers": [{"source": "/api/(.*)", "headers": [{"key": "Access-Control-Allow-Origin", "value": "*"}]}]
 }
