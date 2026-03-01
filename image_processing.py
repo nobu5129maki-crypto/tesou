@@ -23,6 +23,52 @@ def resize_if_needed(img, max_size=800):
     return img.resize((new_w, new_h), Image.Resampling.LANCZOS)
 
 
+def assess_lighting(img):
+    """
+    画像の照明度を評価する（補正前の元画像で判定）
+    戻り値: { status, message, brightness }
+    """
+    gray = img.convert('L')
+    stat = ImageStat.Stat(gray)
+    mean_brightness = stat.mean[0]
+
+    if mean_brightness < 60:
+        return {
+            'status': 'too_dark',
+            'message': '照明が不足しています。明るい場所でもう一度撮影することをおすすめします。',
+            'brightness': round(mean_brightness, 1),
+        }
+    if mean_brightness < 90:
+        return {
+            'status': 'dark',
+            'message': 'やや暗めです。もう少し明るい場所で撮影すると、より正確に解析できます。',
+            'brightness': round(mean_brightness, 1),
+        }
+    if mean_brightness > 220:
+        return {
+            'status': 'too_bright',
+            'message': '明るすぎます。直射日光や強い光を避け、柔らかい光で撮影してみてください。',
+            'brightness': round(mean_brightness, 1),
+        }
+    if mean_brightness > 180:
+        return {
+            'status': 'bright',
+            'message': 'やや明るめです。解析は可能ですが、少し暗めの環境だとより良い結果が出る場合があります。',
+            'brightness': round(mean_brightness, 1),
+        }
+    if 100 <= mean_brightness <= 160:
+        return {
+            'status': 'good',
+            'message': '照明は適切です。手相の線がはっきり検出しやすい条件です。',
+            'brightness': round(mean_brightness, 1),
+        }
+    return {
+        'status': 'ok',
+        'message': '照明は問題ありません。解析できます。',
+        'brightness': round(mean_brightness, 1),
+    }
+
+
 def preprocess_for_lighting(img):
     """照明条件に合わせて画像を補正（暗い・コントラスト不足に対応）"""
     img = img.convert('RGB')
@@ -47,19 +93,25 @@ def preprocess_for_lighting(img):
 def detect_palm_lines(img):
     img = preprocess_for_lighting(img)
     gray = img.convert('L')
-    enhanced = ImageEnhance.Contrast(gray).enhance(2.5)
-    enhanced = ImageEnhance.Sharpness(enhanced).enhance(2.5)
+    # ヒストグラム均等化でしわ・線のコントラストを強調
+    gray = ImageOps.equalize(gray)
+    enhanced = ImageEnhance.Contrast(gray).enhance(3.0)
+    enhanced = ImageEnhance.Sharpness(enhanced).enhance(3.0)
+    # エッジ強調フィルタで線をはっきりさせる
+    enhanced = enhanced.filter(ImageFilter.EDGE_ENHANCE_MORE)
     results = []
-    for blur_radius in [1, 2]:
+    for blur_radius in [1, 2, 3]:
         blurred = enhanced.filter(ImageFilter.GaussianBlur(radius=blur_radius))
         edges = blurred.filter(ImageFilter.FIND_EDGES)
-        edges = ImageEnhance.Contrast(edges).enhance(5.0)
-        edges_binary = edges.point(lambda x: 255 if x > 15 else 0, mode='L')
-        edges_binary = edges_binary.filter(ImageFilter.MaxFilter(5))
-        edges_binary = edges_binary.filter(ImageFilter.MaxFilter(5))
+        edges = ImageEnhance.Contrast(edges).enhance(8.0)
+        # 閾値を下げて薄い線も検出（5以下はノイズになりやすいので5に）
+        edges_binary = edges.point(lambda x: 255 if x > 5 else 0, mode='L')
+        # 線を太くして視認性向上（7x7で2回）
+        edges_binary = edges_binary.filter(ImageFilter.MaxFilter(7))
+        edges_binary = edges_binary.filter(ImageFilter.MaxFilter(7))
         line_count = sum(1 for p in edges_binary.getdata() if p > 0)
         results.append((edges_binary, line_count))
-    results.sort(key=lambda x: abs(x[1] - 5000))
+    results.sort(key=lambda x: abs(x[1] - 8000))
     return results[0][0], enhanced
 
 
@@ -96,19 +148,22 @@ def analyze_line_characteristics(edges_img):
 def create_visualization(img, edges):
     if img.mode != 'RGB':
         img = img.convert('RGB')
-    green = Image.new('RGB', img.size, (0, 255, 80))
+    # 明るいシアンで線をはっきり表示（肌色との対比が強い）
+    line_color = (0, 255, 220)
     black = Image.new('RGB', img.size, (0, 0, 0))
     mask = edges.point(lambda x: 255 if x > 0 else 0, mode='1')
-    overlay = Image.composite(green, black, mask)
-    return Image.blend(img, overlay, 0.65)
+    overlay = Image.composite(
+        Image.new('RGB', img.size, line_color), black, mask
+    )
+    return Image.blend(img, overlay, 0.92)
 
 
 def edges_to_visible_display(edges):
-    """検出された線を明るい緑で表示用に変換"""
-    rgb = Image.new('RGB', edges.size, (20, 18, 16))
-    green = Image.new('RGB', edges.size, (0, 255, 100))
+    """検出された線をはっきり見える色で表示用に変換"""
+    dark_bg = Image.new('RGB', edges.size, (15, 15, 18))
+    bright_line = Image.new('RGB', edges.size, (0, 255, 220))
     mask = edges.point(lambda x: 255 if x > 0 else 0, mode='1')
-    return Image.composite(green, rgb, mask)
+    return Image.composite(bright_line, dark_bg, mask)
 
 
 def encode_image_to_base64(img):

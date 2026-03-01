@@ -10,6 +10,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from image_processing import (
     load_image,
     resize_if_needed,
+    assess_lighting,
     detect_palm_lines,
     analyze_line_characteristics,
     create_visualization,
@@ -71,7 +72,8 @@ def analyze():
             return jsonify({'error': '画像の読み込みに失敗しました'}), 400
         
         img = resize_if_needed(img)
-        
+        lighting = assess_lighting(img)
+
         # 手相解析
         edges, enhanced = detect_palm_lines(img)
         analysis = analyze_line_characteristics(edges)
@@ -98,6 +100,7 @@ def analyze():
             'interpretations': interpretations,
             'categories': categories,
             'analysis': analysis,
+            'lighting': lighting,
             'visualization': f'data:image/png;base64,{viz_base64}',
             'edges_image': f'data:image/png;base64,{edges_base64}',
         })
