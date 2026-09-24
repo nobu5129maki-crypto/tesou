@@ -7,17 +7,7 @@ import os
 import base64
 from flask import Flask, request, jsonify, send_from_directory
 
-from image_processing import (
-    load_image,
-    resize_if_needed,
-    assess_lighting,
-    detect_palm_lines,
-    analyze_line_characteristics,
-    create_visualization,
-    edges_to_visible_display,
-    encode_image_to_base64,
-)
-from palm_interpretation import get_palm_reading_interpretation
+from analysis_service import analyze_image_bytes
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
@@ -67,43 +57,10 @@ def analyze():
                 image_data = image_data.split(',')[1]
             img_bytes = base64.b64decode(image_data)
         
-        img = load_image(img_bytes)
-        if img is None or 0 in img.size:
-            return jsonify({'error': '画像の読み込みに失敗しました'}), 400
-        
-        img = resize_if_needed(img)
-        lighting = assess_lighting(img)
-
-        # 手相解析
-        edges, enhanced = detect_palm_lines(img)
-        analysis = analyze_line_characteristics(edges)
-        interpretations = get_palm_reading_interpretation(analysis)
-        
-        # ビジュアル画像生成
-        visualization = create_visualization(img, edges)
-        viz_base64 = encode_image_to_base64(visualization)
-        edges_display = edges_to_visible_display(edges)
-        edges_base64 = encode_image_to_base64(edges_display)
-        
-        # カテゴリ一覧（見たい分野を選べるように）
-        categories = [
-            {'id': 'love_marriage', 'name': '恋愛・結婚', 'icon': '💕'},
-            {'id': 'work_success', 'name': '仕事・成功', 'icon': '💼'},
-            {'id': 'money', 'name': '金運・財産', 'icon': '💰'},
-            {'id': 'health', 'name': '健康・生命力', 'icon': '💪'},
-            {'id': 'intelligence', 'name': '知性・才能', 'icon': '📚'},
-            {'id': 'intuition', 'name': '直感・スピリチュアル', 'icon': '✨'},
-        ]
-        
-        return jsonify({
-            'success': True,
-            'interpretations': interpretations,
-            'categories': categories,
-            'analysis': analysis,
-            'lighting': lighting,
-            'visualization': f'data:image/png;base64,{viz_base64}',
-            'edges_image': f'data:image/png;base64,{edges_base64}',
-        })
+        result, err = analyze_image_bytes(img_bytes)
+        if err:
+            return jsonify({'error': err}), 400
+        return jsonify(result)
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

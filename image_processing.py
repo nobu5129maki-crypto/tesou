@@ -9,9 +9,39 @@ from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageStat
 
 def load_image(img_bytes):
     try:
-        return Image.open(io.BytesIO(img_bytes)).convert('RGB')
+        img = Image.open(io.BytesIO(img_bytes))
+        img = ImageOps.exif_transpose(img)
+        return img.convert('RGB')
     except Exception:
         return None
+
+
+def count_lit_pixels(gray_img):
+    hist = gray_img.histogram()
+    return sum(hist[1:]) if hist else 0
+
+
+def assess_palm_presence(img):
+    """肌色の割合から、手のひらが写っていそうかを見る。"""
+    sample = img.resize((96, 96), Image.Resampling.BILINEAR)
+    pixels = list(sample.getdata())
+    skin = 0
+    for r, g, b in pixels:
+        if r < 70 or g < 35 or b > 210:
+            continue
+        if r > g >= b * 0.65 and (r - b) > 12 and (r - g) < 90:
+            skin += 1
+    ratio = skin / max(len(pixels), 1)
+    likely = ratio >= 0.16
+    return {
+        'likely_palm': likely,
+        'skin_ratio': round(ratio * 100, 1),
+        'message': (
+            '手のひらとして解析しました。'
+            if likely else
+            '手のひらがはっきり写っていない可能性があります。明るい場所で、手のひら全体を近づけて撮り直すと精度が上がります。'
+        ),
+    }
 
 
 def resize_if_needed(img, max_size=1000):
@@ -93,24 +123,22 @@ def preprocess_for_lighting(img):
 def detect_palm_lines(img):
     img = preprocess_for_lighting(img)
     gray = img.convert('L')
-    # ヒストグラム均等化でしわ・線のコントラストを強調
     gray = ImageOps.equalize(gray)
-    enhanced = ImageEnhance.Contrast(gray).enhance(3.0)
-    enhanced = ImageEnhance.Sharpness(enhanced).enhance(3.0)
-    # エッジ強調フィルタで線をはっきりさせる
-    enhanced = enhanced.filter(ImageFilter.EDGE_ENHANCE_MORE)
+    enhanced = ImageEnhance.Contrast(gray).enhance(2.2)
+    enhanced = ImageEnhance.Sharpness(enhanced).enhance(2.0)
+    enhanced = enhanced.filter(ImageFilter.EDGE_ENHANCE)
+    w, h = enhanced.size
+    target = max(4000, int(w * h * 0.045))
     results = []
-    for blur_radius in [1, 2, 3]:
+    for blur_radius, threshold in ((1.2, 28), (1.8, 22), (2.4, 18)):
         blurred = enhanced.filter(ImageFilter.GaussianBlur(radius=blur_radius))
         edges = blurred.filter(ImageFilter.FIND_EDGES)
-        edges = ImageEnhance.Contrast(edges).enhance(6.0)
-        # 閾値でノイズを抑えつつ線を検出（低すぎると塊になる）
-        edges_binary = edges.point(lambda x: 255 if x > 12 else 0, mode='L')
-        # 線を適度に太く（強くしすぎると塊になって見えなくなる）
-        edges_binary = edges_binary.filter(ImageFilter.MaxFilter(5))
-        line_count = sum(1 for p in edges_binary.getdata() if p > 0)
+        edges = ImageEnhance.Contrast(edges).enhance(3.4)
+        edges_binary = edges.point(lambda x, t=threshold: 255 if x > t else 0, mode='L')
+        edges_binary = edges_binary.filter(ImageFilter.MaxFilter(3))
+        line_count = count_lit_pixels(edges_binary)
         results.append((edges_binary, line_count))
-    results.sort(key=lambda x: abs(x[1] - 6000))
+    results.sort(key=lambda x: abs(x[1] - target))
     return results[0][0], enhanced
 
 
@@ -138,9 +166,11 @@ def analyze_line_characteristics(edges_img):
         if total == 0:
             analysis[name] = 50
             continue
-        count = sum(1 for p in crop.getdata() if p > 0)
+        count = count_lit_pixels(crop)
         density = count / total * 100
-        analysis[name] = min(100, density * 10)
+        # エッジ密度が低くても飽和しないよう、緩やかに 12〜92 へ写す
+        score = 100 * (1 - pow(2.718281828, -density / 7.5))
+        analysis[name] = round(min(92, max(12, score)), 1)
     return analysis
 
 

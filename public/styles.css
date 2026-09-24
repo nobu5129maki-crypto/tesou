@@ -252,18 +252,23 @@ body {
     left: 50%;
     transform: translateX(-50%);
     padding: 0.5rem 1rem;
-    background: rgba(0, 0, 0, 0.7);
-    border: none;
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     color: white;
     border-radius: 6px;
     font-size: 0.85rem;
     cursor: pointer;
-    opacity: 0;
+    opacity: 1;
     transition: opacity 0.2s;
 }
 
-.preview-image-wrapper:hover .change-image-btn {
-    opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+    .change-image-btn {
+        opacity: 0.92;
+    }
+    .preview-image-wrapper:hover .change-image-btn {
+        opacity: 1;
+    }
 }
 
 .analyze-btn {
@@ -351,6 +356,28 @@ body {
 .lighting-status-brightness {
     font-size: 0.85rem;
     opacity: 0.85;
+}
+
+.lighting-status-text p {
+    margin: 0.25rem 0 0;
+}
+
+.palm-status {
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.palm-status.warn {
+    background: rgba(218, 165, 32, 0.15);
+    border: 1px solid rgba(218, 165, 32, 0.5);
+    color: #d8b44a;
+}
+
+body.camera-open {
+    overflow: hidden;
 }
 
 .image-comparison {
