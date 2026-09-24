@@ -2,7 +2,7 @@
  * 手相解析アプリ - Service Worker
  * オフライン対応・PWAインストール用
  */
-const CACHE_NAME = 'palm-reading-v4';
+const CACHE_NAME = 'palm-reading-v5';
 const urlsToCache = [
   '/',
   '/styles.css',
